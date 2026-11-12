@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 #include <memory>
 
@@ -36,7 +37,7 @@ private:
 	};
 
 public:
-	Application();
+	Application(const std::string& dh_param_file = "src/resources/params.txt");
 	virtual         ~Application(void) {}
 
 	void			createWindow(int width, int height);

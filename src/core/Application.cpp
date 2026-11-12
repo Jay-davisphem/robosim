@@ -1,4 +1,5 @@
-﻿#include <iostream>
+﻿#include <cstdlib>
+#include <iostream>
 #include <sstream>
 
 #include "imgui.h"
@@ -7,7 +8,6 @@
 
 #include "ImGuizmo.h"
 
-#define GLEW_STATIC
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
 
@@ -31,24 +31,86 @@ namespace {
 		ATTRIB_WEIGHTS1 = 5,
 		ATTRIB_WEIGHTS2 = 6
 	};
+
+	// Optional camera distance override, mainly useful for documentation screenshots
+	// of robots whose links are much shorter or longer than the demo arm:
+	//   ROBOSIM_CAMERA_RADIUS=1.5 ./robosim examples/planar-2r.txt
+	float cameraRadiusFromEnv()
+	{
+		const float default_radius = 4.0f;
+		if (const char* radius_env = std::getenv("ROBOSIM_CAMERA_RADIUS")) {
+			try {
+				const float radius = std::stof(radius_env);
+				if (radius > 0.1f) return radius;
+			}
+			catch (const std::exception&) {
+			}
+			std::cerr << "Ignoring ROBOSIM_CAMERA_RADIUS: expected a positive number" << std::endl;
+		}
+		return default_radius;
+	}
 }
 
-Application::Application():
+Application::Application(const std::string& dh_param_file):
 	drawmode_(DrawMode::MODE_MESH),
 	shading_toggle_(false),
 	shading_mode_changed_(false),
-	camera_(Vector3f(1, 0, 0), 4.0f, M_PI / 4, M_PI / 6)
+	camera_(Vector3f(1, 0, 0), cameraRadiusFromEnv(), M_PI / 4, M_PI / 6)
 {
-	robot_ = std::make_unique<Robot>("src/resources/params.txt", Vector3f(1, 0, 0));
+	robot_ = std::make_unique<Robot>(dh_param_file, Vector3f(1, 0, 0));
 
 	// now robot knows how many joints it has, we can create sliders to control them
 	joint_angle_controls_.resize(robot_->getNumJoints());
 	prev_controls_.resize(robot_->getNumJoints());
+
+	// Optional startup pose, useful for reproducible documentation screenshots:
+	//   ROBOSIM_ANGLES="0,45,0,-90,0,0" ./robosim    (values in degrees)
+	if (const char* angles_env = std::getenv("ROBOSIM_ANGLES")) {
+		std::stringstream angle_stream(angles_env);
+		std::string token;
+		VectorXf target_angles(robot_->getNumJoints());
+		int index = 0;
+		bool valid = true;
+
+		while (std::getline(angle_stream, token, ',')) {
+			if (index >= robot_->getNumJoints()) {
+				valid = false;
+				break;
+			}
+			try {
+				target_angles(index++) = std::stof(token) * static_cast<float>(M_PI) / 180.0f;
+			}
+			catch (const std::exception&) {
+				valid = false;
+				break;
+			}
+		}
+
+		if (valid && index == robot_->getNumJoints()) {
+			robot_->setJointTargetAngles(target_angles);
+			for (int i = 0; i < robot_->getNumJoints(); i++) {
+				joint_angle_controls_[i] = target_angles(i);
+				prev_controls_[i] = target_angles(i);
+			}
+		}
+		else {
+			std::cerr << "Ignoring ROBOSIM_ANGLES: expected " << robot_->getNumJoints()
+				<< " comma-separated angles in degrees" << std::endl;
+		}
+	}
 }
 
 void Application::createWindow(int width, int height) {
-	// Init GLFW
-	glfwInit();
+	// Init GLFW. GLEW's default loader is GLX-based and fails on a native
+	// Wayland context, so prefer X11 (XWayland) when it is available.
+#if GLFW_VERSION_MAJOR > 3 || (GLFW_VERSION_MAJOR == 3 && GLFW_VERSION_MINOR >= 4)
+	glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
+	if (!glfwInit())
+	{
+		std::cerr << "Failed to initialize GLFW" << std::endl;
+		exit(EXIT_FAILURE);
+	}
 
 	// Set all the required options for GLFW
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -140,9 +202,10 @@ void Application::createWindow(int width, int height) {
 	// Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
 	glewExperimental = GL_TRUE;
 	// Initialize GLEW to setup the OpenGL Function pointers
-	if (GLEW_OK != glewInit())
+	GLenum glew_status = glewInit();
+	if (GLEW_OK != glew_status)
 	{
-		std::cerr << "Failed to initialize GLEW" << std::endl;
+		std::cerr << "Failed to initialize GLEW: " << glewGetErrorString(glew_status) << std::endl;
 		glfwTerminate();
 		exit(EXIT_FAILURE);
 	}

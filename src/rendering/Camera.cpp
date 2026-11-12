@@ -25,7 +25,8 @@ Camera::Camera(
     dragMiddle_(false),
     dragRight_(false),
     shiftDown_(false),
-    radius_(radius)
+    radius_(radius),
+    _minRadius(0.5f)
 {
     // Calculate sines / cosines of angles
     const auto sineAzimuth = sin(azimuthAngle_);

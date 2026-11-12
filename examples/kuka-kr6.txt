@@ -1,0 +1,8 @@
+# KUKA KR 6 class arm (approximate standard DH parameters, metres, radians)
+# sigma  a       d       alpha   theta
+R        0.025   0.400   pi/2    x
+R        0.315   0       0       x
+R        0.035   0       pi/2    x
+R        0       0.365   -pi/2   x
+R        0       0       pi/2    x
+R        0       0.080   0       x

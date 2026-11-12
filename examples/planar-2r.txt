@@ -1,0 +1,4 @@
+# Minimal 2R planar arm (educational example, metres, radians)
+# sigma  a      d     alpha   theta
+R        0.5    0     0       x
+R        0.5    0     0       x

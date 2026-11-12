@@ -1,0 +1,8 @@
+# ABB IRB 120 class arm (approximate standard DH parameters, metres, radians)
+# sigma  a       d       alpha   theta
+R        0       0.290   -pi/2   x
+R        0.270   0       0       x
+R        0.070   0       -pi/2   x
+R        0       0.302   pi/2    x
+R        0       0       -pi/2   x
+R        0       0.072   0       x

@@ -261,46 +261,41 @@ vec3 final_color = ambient + diffuse + specular;
 ```bash
 sudo apt update
 sudo apt install build-essential cmake git
-sudo apt install libgl1-mesa-dev libglfw3-dev libglew-dev libeigen3-dev
+sudo apt install libgl1-mesa-dev libglfw3-dev libglew-dev
 ```
 
 #### Fedora/CentOS/RHEL
 ```bash
 sudo dnf install gcc-c++ cmake git
-sudo dnf install mesa-libGL-devel glfw-devel glew-devel eigen3-devel
+sudo dnf install mesa-libGL-devel glfw-devel glew-devel
 ```
 
 #### macOS (using Homebrew)
 ```bash
-brew install cmake git glfw glew eigen
+brew install cmake git glfw glew
 ```
 
 #### Windows (using vcpkg)
 ```bash
-vcpkg install glfw3 glew eigen3
+vcpkg install glfw3 glew
 ```
+
+> Eigen, Dear ImGui and ImGuizmo are vendored in `lib/` and do not need to be installed.
 
 ### Building from Source
 
 #### Step 1: Clone Repository
 ```bash
-git clone https://github.com/samilauronen/robosim.git
+git clone <repository-url>
 cd robosim
 ```
 
-#### Step 2: Initialize Submodules
+#### Step 2: Configure Build
 ```bash
-# Fix SSH to HTTPS for ImGuizmo (if needed)
-git config --file=.gitmodules submodule.lib/ImGuizmo.url https://github.com/CedricGuillemet/ImGuizmo.git
-git submodule sync
-git submodule update --init --recursive
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 ```
 
-#### Step 3: Configure Build
-```bash
-mkdir build && cd build
-cmake ..
-```
+> There are no git submodules to initialise: all third-party sources are vendored in `lib/`.
 
 **Common CMake Options:**
 ```bash
@@ -329,7 +324,6 @@ make -j4
 ls -la ../robosim
 
 # Test run (should open window)
-cd ..
 ./robosim
 ```
 
@@ -348,16 +342,11 @@ sudo apt install [missing-package-dev]
 ```bash
 # Clear cache and reconfigure
 rm -rf build/
-mkdir build && cd build
-cmake .. -DCMAKE_VERBOSE_MAKEFILE=ON
+cmake -S . -B build -DCMAKE_VERBOSE_MAKEFILE=ON
 ```
 
-#### Submodule Issues
-```bash
-# Reset submodules
-git submodule deinit --all
-git submodule update --init --recursive
-```
+#### Vendored Libraries
+If `lib/` is missing or incomplete, re-clone the repository. ImGui and ImGuizmo are committed as regular files (there is no `.gitmodules`), so `git submodule` commands are not needed.
 
 ---
 
@@ -1029,28 +1018,19 @@ CMake Error: Could not find a package configuration file provided by "glfw3"
 **Solution**:
 ```bash
 # Ubuntu/Debian
-sudo apt install libglfw3-dev libglew-dev libeigen3-dev
+sudo apt install libglfw3-dev libglew-dev
 
 # Fedora/CentOS  
-sudo dnf install glfw-devel glew-devel eigen3-devel
+sudo dnf install glfw-devel glew-devel
 
 # macOS
-brew install glfw glew eigen
+brew install glfw glew
 ```
 
-#### Submodule Issues
+#### Vendored Libraries
 **Problem**: ImGui or ImGuizmo directories are empty
-```
-fatal: clone of 'git@github.com:...' failed
-```
 
-**Solution**:
-```bash
-# Convert SSH to HTTPS
-git config --file=.gitmodules submodule.lib/ImGuizmo.url https://github.com/CedricGuillemet/ImGuizmo.git
-git submodule sync
-git submodule update --init --recursive
-```
+**Solution**: Re-clone the repository — the libraries are committed under `lib/` and are not git submodules.
 
 #### CMake Version Issues
 **Problem**: CMake version too old
@@ -1175,12 +1155,9 @@ Failed to create OpenGL context
    ```
 
 2. **Check ImGui Version Compatibility**:
+   The vendored Dear ImGui lives in `lib/imgui` as a regular directory (not a submodule). If you replace it with another version, rebuild:
    ```bash
-   # Update submodule to latest
-   cd lib/imgui/imgui
-   git pull origin master
-   cd ../../..
-   make clean && make
+   cmake --build build -j"$(nproc)"
    ```
 
 ### Debugging Techniques
