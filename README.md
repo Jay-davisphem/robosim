@@ -4,6 +4,10 @@ A small C++17 / OpenGL simulator for serial robot arms. Describe an arm with Den
 
 ![RoboSim arm in its home pose](doc/screenshots/pose-home.png)
 
+## Demo
+
+![RoboSim demo animation](https://github.com/samilauronen/robosim/blob/main/doc/demo.gif)
+
 ## What you can do
 
 - **Visualise any revolute serial arm** from a DH table (2 joints and up; the default is 6R).
